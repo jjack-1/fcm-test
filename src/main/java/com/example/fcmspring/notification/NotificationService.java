@@ -6,6 +6,7 @@ import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.Message;
 import com.google.firebase.messaging.Notification;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -32,6 +33,7 @@ public class NotificationService {
      * @param recipientId 알림을 받을 사용자의 ID
      * @param requesterId 친구 요청을 보낸 사용자의 ID
      */
+    @Async // 이 어노테이션 하나로 비동기 처리가 적용됩니다.
     public void sendFriendRequestNotification(Long recipientId, Long requesterId) {
         // 1. 알림을 받을 사용자(수신자)와 요청을 보낸 사용자(요청자)의 정보를 DB에서 조회합니다.
         Optional<User> recipientUserOpt = userService.findById(recipientId);
@@ -82,9 +84,9 @@ public class NotificationService {
             String response = firebaseMessaging.send(message);
             System.out.println("Successfully sent message to FCM: " + response);
         } catch (FirebaseMessagingException e) {
-            // FCM 전송 중 에러가 발생하면 로그를 남깁니다.
-            System.err.println("Error sending message to FCM: " + e.getMessage());
-            e.printStackTrace();
+            // 비동기 호출에서는 예외를 다시 던져서 핸들러가 처리하도록 해야 합니다.
+            System.err.println("FCM 전송 중 에러 발생! 핸들러로 예외를 전파합니다.");
+            throw new RuntimeException(e); // 핸들러가 잡을 수 있도록 런타임 예외로 감싸서 던집니다.
         }
     }
 }
